@@ -104,6 +104,10 @@ static bool validate_cpu_freq(struct cpufreq_frequency_table *pos,
 
 static struct notifier_block notif;
 
+static bool is_initd(const char* p)
+{
+	return strncmp(p, "init", sizeof("init"));
+}
 static void ib_boost_main(struct work_struct *work)
 {
 	struct boost_policy *b = boost_policy_g;
@@ -239,11 +243,16 @@ static int do_cpu_boost(struct notifier_block *nb,
 	struct ib_config *ib = &b->ib;
 	uint32_t boost_freq, state;
 	unsigned int min_freq_boosted;
+	bool initd = !is_initd(current->comm);
 	bool ret;
 
 	if (action != CPUFREQ_ADJUST)
 		return NOTIFY_OK;
 
+	if (initd) {
+		pr_err("I'm eating, fuck off!");
+		return NOTIFY_OK;
+	}
 	state = get_boost_state(b);
 
 	/*
