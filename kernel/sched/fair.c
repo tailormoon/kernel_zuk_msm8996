@@ -5102,7 +5102,20 @@ struct energy_env {
 	/* Utilization to move */
 	struct task_struct	*p;
 	int			util_delta;
-
+	int	dst_cpu;
+	int	src_cpu;
+	int	payoff;
+	struct {
+		int before;
+		int after;
+		int delta;
+		int diff;
+	} nrg;
+	struct {
+		int before;
+		int after;
+		int delta;
+} cap;
 	/* Mask of CPUs candidates to evaluate */
 	cpumask_t		cpus_mask;
 
@@ -5536,6 +5549,14 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 	for (cpu_idx = EAS_CPU_PRV; cpu_idx < EAS_CPU_CNT; ++cpu_idx)
 		eenv->cpu[cpu_idx].energy >>= SCHED_CAPACITY_SHIFT;
 
+#ifndef CONFIG_SCHED_TUNE
+	trace_sched_energy_diff(eenv->p,
+			eenv->src_cpu, eenv->dst_cpu, eenv->util_delta,
+			eenv->nrg.before, eenv->nrg.after, eenv->nrg.diff,
+			eenv->cap.before, eenv->cap.after, eenv->cap.delta,
+			eenv->nrg.delta, eenv->payoff);
+#endif
+
 	/*
 	 * Compute the dead-zone margin used to prevent too many task
 	 * migrations with negligible energy savings.
@@ -5549,6 +5570,12 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 	 * efficient, with a 0 energy variation.
 	 */
 	eenv->next_idx = EAS_CPU_PRV;
+
+	trace_sched_energy_diff(eenv->p,
+			eenv->src_cpu, eenv->dst_cpu, eenv->util_delta,
+			eenv->nrg.before, eenv->nrg.after, eenv->nrg.diff,
+			eenv->cap.before, eenv->cap.after, eenv->cap.delta,
+			eenv->nrg.delta, eenv->payoff);
 
 	/*
 	 * Compare the other CPU candidates to find a CPU which can be
